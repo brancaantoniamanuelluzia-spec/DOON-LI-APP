@@ -1,0 +1,304 @@
+import { useState, useEffect } from 'react';
+import coverImage from 'figma:asset/2a6fda67f29dace1ed980bfe20002a908036aba2.png';
+import bgImage from 'figma:asset/64a636edd7a4732cab739ea8e596cfad6770a1d9.png';
+
+export default function App() {
+  const [currentScreen, setCurrentScreen] = useState('splash');
+  const [currentTime, setCurrentTime] = useState('09:41');
+  const [bgPosition, setBgPosition] = useState(0);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallButton, setShowInstallButton] = useState(false);
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      setCurrentTime(`${hours}:${minutes}`);
+    };
+    
+    updateTime();
+    const interval = setInterval(updateTime, 60000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Efeito para mover a imagem de fundo a cada 5 segundos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBgPosition(prev => (prev + 1) % 4); // Cicla entre 4 posições
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Detectar se o app pode ser instalado
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallButton(true);
+    };
+    
+    window.addEventListener('beforeinstallprompt', handler);
+    
+    // Checar se já está instalado
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setShowInstallButton(false);
+    }
+    
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      console.log('App instalado!');
+    }
+    
+    setDeferredPrompt(null);
+    setShowInstallButton(false);
+  };
+
+  const getBackgroundPosition = () => {
+    const positions = [
+      'center center',
+      'left center',
+      'right center',
+      'center top'
+    ];
+    return positions[bgPosition];
+  };
+
+  return (
+    <div className="min-h-screen bg-[#060d1f] text-[#e2f0f8] font-sans overflow-hidden relative">
+      
+      {/* Imagem de Fundo com Transição */}
+      <div 
+        className="fixed inset-0 z-0 transition-all duration-1000 ease-in-out"
+        style={{
+          backgroundImage: `url(${bgImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: getBackgroundPosition(),
+          opacity: 0.15
+        }}
+      />
+      
+      {/* Overlay escuro */}
+      <div className="fixed inset-0 z-0 bg-[#060d1f] opacity-90" />
+
+      {/* Glow Decorations */}
+      <div className="fixed top-[-100px] right-[-80px] w-[280px] h-[280px] rounded-full pointer-events-none z-10" 
+           style={{ background: 'radial-gradient(circle, rgba(0,200,255,0.1), transparent 70%)' }} />
+      <div className="fixed bottom-[-80px] left-[-60px] w-[220px] h-[220px] rounded-full pointer-events-none z-10"
+           style={{ background: 'radial-gradient(circle, rgba(0,230,118,0.07), transparent 70%)' }} />
+
+      {/* Frame */}
+      <div className="w-full max-w-[430px] min-h-screen mx-auto relative overflow-hidden flex flex-col bg-transparent z-20">
+        
+        {/* Status Bar */}
+        <div className="bg-[rgba(6,13,31,0.9)] backdrop-blur-[10px] h-[44px] px-5 flex items-center justify-between flex-shrink-0 z-50 border-b border-[rgba(255,255,255,0.04)]">
+          <span className="text-[15px] font-bold tracking-wider">{currentTime}</span>
+          <div className="flex items-center gap-[5px] text-[13px]">
+            <span>📶</span>
+            <span>WiFi</span>
+            <span>🔋87%</span>
+          </div>
+        </div>
+
+        {/* Splash Screen */}
+        {currentScreen === 'splash' && (
+          <div className="flex flex-col items-center justify-center min-h-[calc(100vh-44px)] px-6 py-10 text-center">
+            
+            {/* Logo - Com imagem de capa do celular */}
+            <div className="w-[120px] h-[120px] rounded-3xl mb-6 flex items-center justify-center relative overflow-hidden"
+                 style={{ 
+                   background: 'linear-gradient(135deg, #00c8ff, #0077aa)',
+                   boxShadow: '0 0 40px rgba(0,200,255,0.35)',
+                   animation: 'logoPulse 3s ease-in-out infinite'
+                 }}>
+              <img 
+                src={coverImage}
+                alt="Doon Li Security"
+                className="w-full h-full object-cover rounded-[22px]"
+              />
+            </div>
+
+            {/* Title */}
+            <h1 className="text-[38px] font-black tracking-tight mb-2"
+                style={{
+                  background: 'linear-gradient(135deg, #fff, #00c8ff)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
+              Doon Li
+            </h1>
+
+            <p className="text-[14px] text-[#6a8fa8] leading-relaxed mb-10">
+              Segurança Anti-Roubo Avançada
+            </p>
+
+            {/* Badge */}
+            <div className="inline-flex items-center gap-[6px] bg-[rgba(0,230,118,0.12)] border border-[rgba(0,230,118,0.3)] rounded-[20px] px-[14px] py-[6px] text-[12px] text-[#00e676] mb-8 font-semibold">
+              <span>🛡️</span>
+              <span>Proteção Máxima Ativa</span>
+            </div>
+
+            {/* Buttons */}
+            <button 
+              onClick={() => setCurrentScreen('home')}
+              className="w-full px-4 py-4 rounded-[14px] text-[15px] font-bold cursor-pointer border-none transition-all flex items-center justify-center gap-2 tracking-wide text-white mb-2 active:scale-95"
+              style={{
+                background: 'linear-gradient(135deg, #00c8ff, #0077aa)',
+                boxShadow: '0 4px 20px rgba(0,200,255,0.3)'
+              }}
+            >
+              Acessar Sistema
+            </button>
+
+            <button 
+              className="w-full px-4 py-4 rounded-[14px] text-[15px] font-bold cursor-pointer transition-all flex items-center justify-center gap-2 tracking-wide bg-transparent text-[#00c8ff] border-[1.5px] border-[rgba(0,200,255,0.4)] active:scale-95 active:bg-[rgba(0,200,255,0.08)]"
+            >
+              Saiba Mais
+            </button>
+
+            {/* Botão de Instalação PWA */}
+            {showInstallButton && (
+              <button 
+                onClick={handleInstallClick}
+                className="w-full px-4 py-4 rounded-[14px] text-[15px] font-bold cursor-pointer transition-all flex items-center justify-center gap-2 tracking-wide text-white mt-2 active:scale-95"
+                style={{
+                  background: 'linear-gradient(135deg, #00e676, #00b85a)',
+                  boxShadow: '0 4px 20px rgba(0,230,118,0.3)'
+                }}
+              >
+                📱 Instalar App
+              </button>
+            )}
+
+          </div>
+        )}
+
+        {/* Home Screen */}
+        {currentScreen === 'home' && (
+          <div className="p-5 pb-[100px]">
+            
+            {/* Shield Status */}
+            <div className="text-center py-8 px-5 pb-6">
+              <div className="relative w-[140px] h-[140px] mx-auto mb-4">
+                <svg className="absolute inset-0 w-full h-full -rotate-90">
+                  <circle
+                    cx="70"
+                    cy="70"
+                    r="60"
+                    stroke="rgba(0,230,118,0.2)"
+                    strokeWidth="8"
+                    fill="none"
+                  />
+                  <circle
+                    cx="70"
+                    cy="70"
+                    r="60"
+                    stroke="#00e676"
+                    strokeWidth="8"
+                    fill="none"
+                    strokeDasharray="377"
+                    strokeDashoffset="0"
+                    strokeLinecap="round"
+                    style={{
+                      transition: 'stroke-dashoffset 1s ease',
+                    }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="text-[50px]">🛡️</div>
+                  <div className="text-[13px] font-extrabold text-[#00e676]">100%</div>
+                </div>
+              </div>
+              <div className="text-[22px] font-black text-[#00e676] mb-1">Sistema Protegido</div>
+              <div className="text-[12px] text-[#6a8fa8]">Todos os recursos ativos</div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-[10px] mb-4">
+              <div className="bg-[rgba(255,255,255,0.04)] border border-[rgba(0,200,255,0.15)] rounded-[14px] p-4 backdrop-blur-sm">
+                <div className="text-[24px] font-extrabold text-[#00c8ff]">0</div>
+                <div className="text-[11px] text-[#6a8fa8] mt-[2px] font-medium">Ameaças Bloqueadas</div>
+              </div>
+              <div className="bg-[rgba(255,255,255,0.04)] border border-[rgba(0,200,255,0.15)] rounded-[14px] p-4 backdrop-blur-sm">
+                <div className="text-[24px] font-extrabold text-[#00c8ff]">24h</div>
+                <div className="text-[11px] text-[#6a8fa8] mt-[2px] font-medium">Proteção Contínua</div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="grid grid-cols-2 gap-[10px] mb-4">
+              <div className="bg-[rgba(255,255,255,0.04)] border border-[rgba(0,200,255,0.15)] rounded-[14px] p-4 text-center cursor-pointer transition-all active:scale-95 backdrop-blur-sm hover:bg-[rgba(0,200,255,0.08)]">
+                <div className="text-[28px] mb-2">🔐</div>
+                <div className="text-[12px] font-semibold">Bloquear</div>
+                <div className="text-[10px] text-[#6a8fa8] mt-[2px]">Dispositivo</div>
+              </div>
+              <div className="bg-[rgba(255,255,255,0.04)] border border-[rgba(0,200,255,0.15)] rounded-[14px] p-4 text-center cursor-pointer transition-all active:scale-95 backdrop-blur-sm hover:bg-[rgba(0,200,255,0.08)]">
+                <div className="text-[28px] mb-2">📍</div>
+                <div className="text-[12px] font-semibold">Rastrear</div>
+                <div className="text-[10px] text-[#6a8fa8] mt-[2px]">Localização GPS</div>
+              </div>
+              <div className="bg-[rgba(255,255,255,0.04)] border border-[rgba(0,200,255,0.15)] rounded-[14px] p-4 text-center cursor-pointer transition-all active:scale-95 backdrop-blur-sm hover:bg-[rgba(0,200,255,0.08)]">
+                <div className="text-[28px] mb-2">🔔</div>
+                <div className="text-[12px] font-semibold">Alarme</div>
+                <div className="text-[10px] text-[#6a8fa8] mt-[2px]">Soar Alto</div>
+              </div>
+              <div className="bg-[rgba(255,255,255,0.04)] border border-[rgba(0,200,255,0.15)] rounded-[14px] p-4 text-center cursor-pointer transition-all active:scale-95 backdrop-blur-sm hover:bg-[rgba(0,200,255,0.08)]">
+                <div className="text-[28px] mb-2">📸</div>
+                <div className="text-[12px] font-semibold">Capturar</div>
+                <div className="text-[10px] text-[#6a8fa8] mt-[2px]">Foto Invasor</div>
+              </div>
+            </div>
+
+            {/* Security Card */}
+            <div className="bg-[rgba(255,255,255,0.04)] border border-[rgba(0,200,255,0.15)] rounded-[14px] p-4 mb-4 backdrop-blur-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-[rgba(0,200,255,0.1)] flex items-center justify-center text-xl">
+                  🔒
+                </div>
+                <div className="flex-1">
+                  <div className="text-[14px] font-bold">Criptografia Ativa</div>
+                  <div className="text-[12px] text-[#6a8fa8]">Nível militar AES-256</div>
+                </div>
+                <div className="w-11 h-6 bg-[#00c8ff] rounded-full relative cursor-pointer">
+                  <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition-all"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Alert */}
+            <div className="p-[13px] px-4 rounded-xl text-[13px] mb-[14px] flex items-start gap-[10px] leading-relaxed bg-[rgba(0,200,255,0.07)] text-[#00c8ff] border border-[rgba(0,200,255,0.2)] backdrop-blur-sm">
+              <span>ℹ️</span>
+              <span>Mantenha sua senha segura. Nunca compartilhe seus dados de acesso.</span>
+            </div>
+
+            <button 
+              onClick={() => setCurrentScreen('splash')}
+              className="w-full px-4 py-4 rounded-[14px] text-[15px] font-bold cursor-pointer transition-all flex items-center justify-center gap-2 tracking-wide bg-[rgba(255,255,255,0.05)] text-[#e2f0f8] border border-[rgba(0,200,255,0.15)] active:scale-95 backdrop-blur-sm"
+            >
+              ← Voltar ao Início
+            </button>
+
+          </div>
+        )}
+
+      </div>
+
+      <style>{`
+        @keyframes logoPulse {
+          0%, 100% { box-shadow: 0 0 30px rgba(0,200,255,0.3); }
+          50% { box-shadow: 0 0 60px rgba(0,200,255,0.5); }
+        }
+      `}</style>
+    </div>
+  );
+}
